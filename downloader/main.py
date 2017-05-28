@@ -3,6 +3,7 @@
 import requests
 import json
 
+
 def get_latest_post_ids(user, limit):
     """
         Get latest {limit} posts from {user} in JSON format.
@@ -46,3 +47,12 @@ def get_post_ids(text):
             if "Post" in parsed_json["payload"]["references"]:
                 return parsed_json["payload"]["references"]["Post"].keys()
     return []
+
+def download_posts_in_html(user, post_ids):
+    html_posts = []
+    main_url = "https://medium.com/@{0}/".format(user)
+    for post_id in post_ids:
+        url = main_url + post_id
+        print(url)
+
+    return html_posts

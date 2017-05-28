@@ -1,3 +1,6 @@
+# subdirectories used by the downloader
+medium_posts_markdown/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
