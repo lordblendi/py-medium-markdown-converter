@@ -16,5 +16,5 @@ medium_post_dir_markdown = "medium_posts_markdown"
 if not os.path.exists(medium_post_dir_markdown):
     os.makedirs(medium_post_dir_markdown)
 
-post_ids = downloader.get_latest_post_ids(args.u, args.l)
-html_posts = downloader.download_posts_in_html(args.u, post_ids)
+posts = downloader.find_latest_posts(args.u, args.l)
+html_posts = downloader.download_posts_in_html(args.u, posts)

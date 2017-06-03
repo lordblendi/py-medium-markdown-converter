@@ -2,9 +2,11 @@
 
 import requests
 import json
+from html.parser import HTMLParser as HTMLParser
+from datetime import datetime
 
 
-def get_latest_post_ids(user, limit):
+def find_latest_posts(user, limit):
     """
         Get latest {limit} posts from {user} in JSON format.
 
@@ -23,10 +25,10 @@ def get_latest_post_ids(user, limit):
     headers = {'Accept': 'application/json'}
 
     response = requests.get(url, params, headers=headers)
-    return get_post_ids(response.text)
+    return get_post_metadata(response.text)
 
 
-def get_post_ids(text):
+def get_post_metadata(text):
     """
         Deletes the XML snipplet from the beginning of {text},
         as the Medium API tries to avoid json hijacking
@@ -40,19 +42,48 @@ def get_post_ids(text):
     #
     # Takes the substring of {text} between the first occurence of { and the end
     text_without_xml = text[text.find("{"):]
+    posts = []
+    keys = []
 
     parsed_json = json.loads(text_without_xml)
     if "payload" in parsed_json:
         if "references" in parsed_json["payload"]:
             if "Post" in parsed_json["payload"]["references"]:
-                return parsed_json["payload"]["references"]["Post"].keys()
-    return []
+                keys =  parsed_json["payload"]["references"]["Post"].keys()
 
-def download_posts_in_html(user, post_ids):
+    for key in keys:
+        post = parsed_json["payload"]["references"]["Post"][key]
+        new_entry = {
+            "id" : post["id"],
+            "title" : post["title"],
+            # conver the timestamps from miliseconds to seconds
+            "published" : float(post["firstPublishedAt"])/1000
+        }
+        posts.append(new_entry)
+    return posts
+
+def download_posts_in_html(user, posts):
     html_posts = []
     main_url = "https://medium.com/@{0}/".format(user)
-    for post_id in post_ids:
-        url = main_url + post_id
-        print(url)
+    for post in posts:
+        url = main_url + post["id"]
+
+        # for the filename getting the date of the publication and
+        date = datetime.fromtimestamp(post["published"])
+        date = date.strftime("%Y-%m-%d")
+        # dasherizing the title
+        title = post["title"].lower().replace(" ", "-")
+        filename = "{0}-{1}".format(date,title)
+        post_file = open("medium_posts_markdown/{0}.md".format(filename), "w")
+
+        response = requests.get(url)
+        post_file.write(transform_html_to_markdown(response.text))
+        post_file.close()
 
     return html_posts
+
+def transform_html_to_markdown(response):
+    post_html = response[response.find("<section"):response.find("</section>")+10]
+    parser = HTMLParser()
+    parser.feed(post_html)
+    return post_html
