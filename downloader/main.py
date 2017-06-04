@@ -103,11 +103,27 @@ def transform_html_to_markdown(response):
 
     post_md = ""
     post_html = response[response.find("<div class=\"section-inner sectionLayout--insetColumn\">"):response.find("</div></section>")]
-    print(post_html)
     root = ET.fromstring(post_html)
 
     for child in root:
-        print(child)
-        print(child.tag, child.attrib, child.text)
+        if child.tag == "h1":
+            # TODO: STRONG
+            post_md += "# {0}".format(child.text)
+        elif child.tag == "p":
+            # TODO: STRONG
+            # TODO: links
+            post_md += "\n\n{0}".format(child.text)
+        elif child.tag == "figure":
+            # TODO: picture
+            print("todo picture")
+        elif child.tag == "ul":
+            for item in child:
+                post_md += "\n - {0}".format(item.text)
+        elif child.tag == "ol":
+            for index, item in enumerate(child, start=1):
+                post_md += "\n {1}. {0}".format(item.text, index)
+        else:
+            # print(child.tag, child.attrib, child.text)
+            print(post_html)
 
-    return post_html
+    return post_md
