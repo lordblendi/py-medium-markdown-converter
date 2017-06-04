@@ -63,6 +63,12 @@ def get_post_metadata(text):
     return posts
 
 def download_posts_in_html(user, posts):
+    """
+        Download a {user}'s posts. The post ids are defined in the {posts}.
+
+        The {posts} also contains the article's title and publish that.
+        These combined will be the filename for the markdown files.
+    """
     html_posts = []
     main_url = "https://medium.com/@{0}/".format(user)
     for post in posts:
@@ -83,6 +89,9 @@ def download_posts_in_html(user, posts):
     return html_posts
 
 def transform_html_to_markdown(response):
+    """
+        Get the article out of the {response} as html then convert it to markdown.
+    """
     post_html = response[response.find("<section"):response.find("</section>")+10]
     parser = HTMLParser()
     parser.feed(post_html)
