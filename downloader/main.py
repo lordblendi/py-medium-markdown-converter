@@ -2,7 +2,7 @@
 
 import requests
 import json
-from html.parser import HTMLParser as HTMLParser
+import xml.etree.ElementTree as ET
 from datetime import datetime
 
 
@@ -91,8 +91,23 @@ def download_posts_in_html(user, posts):
 def transform_html_to_markdown(response):
     """
         Get the article out of the {response} as html then convert it to markdown.
+
+        I parse it as an xml. Because of this, I have to cut out the following part:
+
+        <div class="section-divider">
+            <hr class="section-divider">
+        </div>
+
+        as this is not a valid xml snipplet.
     """
-    post_html = response[response.find("<section"):response.find("</section>")+10]
-    parser = HTMLParser()
-    parser.feed(post_html)
+
+    post_md = ""
+    post_html = response[response.find("<div class=\"section-inner sectionLayout--insetColumn\">"):response.find("</div></section>")]
+    print(post_html)
+    root = ET.fromstring(post_html)
+
+    for child in root:
+        print(child)
+        print(child.tag, child.attrib, child.text)
+
     return post_html
