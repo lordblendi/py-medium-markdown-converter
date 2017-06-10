@@ -130,7 +130,7 @@ def picture_handler(tag, separator, post_html):
     => ![CAPTION](PATH_TO_IMG)
     """
     old_tag = tag
-    close_tag = "</{0}".format(tag)
+    close_tag = "</{0}>".format(tag)
     tag = "<{0}".format(tag)
 
     start = post_html.find(tag)
