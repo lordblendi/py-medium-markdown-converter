@@ -40,7 +40,8 @@ def get_post_metadata(text):
     # before the json to avoid json hijacking
     # 2017. 06. 07.
     #
-    # Takes the substring of {text} between the first occurence of { and the end
+    # Takes the substring of {text} between the first occurence of { and the
+    # end
     text_without_xml = text[text.find("{"):]
     posts = []
     keys = []
@@ -49,18 +50,19 @@ def get_post_metadata(text):
     if "payload" in parsed_json:
         if "references" in parsed_json["payload"]:
             if "Post" in parsed_json["payload"]["references"]:
-                keys =  parsed_json["payload"]["references"]["Post"].keys()
+                keys = parsed_json["payload"]["references"]["Post"].keys()
 
     for key in keys:
         post = parsed_json["payload"]["references"]["Post"][key]
         new_entry = {
-            "id" : post["id"],
-            "title" : post["title"],
+            "id": post["id"],
+            "title": post["title"],
             # conver the timestamps from miliseconds to seconds
-            "published" : float(post["firstPublishedAt"])/1000
+            "published": float(post["firstPublishedAt"]) / 1000
         }
         posts.append(new_entry)
     return posts
+
 
 def download_posts_in_html(user, posts):
     """
@@ -79,7 +81,7 @@ def download_posts_in_html(user, posts):
         date = date.strftime("%Y-%m-%d")
         # dasherizing the title
         title = post["title"].lower().replace(" ", "-")
-        filename = "{0}-{1}".format(date,title)
+        filename = "{0}-{1}".format(date, title)
         post_file = open("medium_posts_markdown/{0}.md".format(filename), "w")
 
         response = requests.get(url)
@@ -87,6 +89,74 @@ def download_posts_in_html(user, posts):
         post_file.close()
 
     return html_posts
+
+
+def tag_handler(tag, separator, post_html):
+    """
+    This function switches from a specific {tag} to a specific
+    markdown {separator}
+
+    Example 1: <em>text</em> => *text*
+    Example 2: <strong>text</strong> => **text**
+    """
+    old_tag = tag
+    close_tag = "</{0}".format(tag)
+    tag = "<{0}".format(tag)
+
+    start = post_html.find(tag)
+    end = post_html.find(close_tag) + len(close_tag)
+    start_text = post_html.find(">", post_html.find(tag)) + 1
+    end_text = post_html.find(close_tag)
+
+    text = post_html[start_text:end_text]
+    new_text = "{1}{0}{1}".format(text, separator)
+    post_html = post_html[:start] + new_text + post_html[end:]
+    if (post_html.find(tag) >= 0):
+        post_html = tag_handler(old_tag, separator, post_html)
+    return post_html
+
+
+def picture_handler(tag, separator, post_html):
+    """
+    This function switches from a specific {tag} to a specific
+    markdown image syntax
+
+    Example:
+    <figure>
+        <img src="PATH_TO_IMG">
+        <figcaption class="imageCaption">CAPTION</figcaption></figure>
+    </figure>
+
+    => ![CAPTION](PATH_TO_IMG)
+    """
+    old_tag = tag
+    close_tag = "</{0}".format(tag)
+    tag = "<{0}".format(tag)
+
+    start = post_html.find(tag)
+    end = post_html.find(close_tag) + len(close_tag)
+    picture_html = post_html[start:end]
+
+    caption = ""
+    link = ""
+    picture_markdown = ""
+
+    if picture_html.find("src=") >= 0:
+        link = picture_html[picture_html.find(
+            "src=") + 5:picture_html.find("jpeg\">") + 4]
+    if picture_html.find("<figcaption") >= 0:
+        caption = picture_html[picture_html.find(
+            "<figcaption class=\"imageCaption\">") + 33: picture_html.find("</figcaption>")]
+
+    if len(link) > 0:
+        picture_markdown = "<{2}>![{0}]({1})</{2}>".format(caption,
+                                                           link, separator)
+    post_html = post_html[:start] + picture_markdown + post_html[end:]
+
+    if (post_html.find(tag) >= 0):
+        post_html = picture_handler(old_tag, separator, post_html)
+    return post_html
+
 
 def transform_html_to_markdown(response):
     """
@@ -102,20 +172,30 @@ def transform_html_to_markdown(response):
     """
 
     post_md = ""
-    post_html = response[response.find("<div class=\"section-inner sectionLayout--insetColumn\">"):response.find("</div></section>")]
+    post_html = response[response.find(
+        "<div class=\"section-inner sectionLayout--insetColumn\">"):response.find("</div></section>")]
+
+    if post_html.find("<strong") >= 0:
+        post_html = tag_handler("strong", "**", post_html)
+
+    if post_html.find("<em") >= 0:
+        post_html = tag_handler("em", "*", post_html)
+
+    if post_html.find("<figure") >= 0:
+        post_html = picture_handler("figure", "p", post_html)
+
     root = ET.fromstring(post_html)
 
     for child in root:
         if child.tag == "h1":
-            # TODO: STRONG
             post_md += "# {0}".format(child.text)
+        elif child.tag == "h2":
+            post_md += "## {0}".format(child.text)
+        elif child.tag == "h3":
+            post_md += "### {0}".format(child.text)
         elif child.tag == "p":
-            # TODO: STRONG
             # TODO: links
             post_md += "\n\n{0}".format(child.text)
-        elif child.tag == "figure":
-            # TODO: picture
-            print("todo picture")
         elif child.tag == "ul":
             for item in child:
                 post_md += "\n - {0}".format(item.text)
@@ -123,7 +203,6 @@ def transform_html_to_markdown(response):
             for index, item in enumerate(child, start=1):
                 post_md += "\n {1}. {0}".format(item.text, index)
         else:
-            # print(child.tag, child.attrib, child.text)
-            print(post_html)
+            print("unkown tag: ", child.tag, child.text)
 
     return post_md
