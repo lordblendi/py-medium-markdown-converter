@@ -158,6 +158,43 @@ def picture_handler(tag, separator, post_html):
     return post_html
 
 
+def link_handler(tag, post_html):
+    """
+    This function switches from a specific {tag} to a specific
+    markdown link syntax
+
+    Example:
+    <a href=URL>CAPTION</a> => [CAPTION](URL)
+    """
+    old_tag = tag
+    close_tag = "</{0}>".format(tag)
+    tag = "<{0}".format(tag)
+
+    start = post_html.find(tag)
+    end = post_html.find(close_tag) + len(close_tag)
+    link_html = post_html[start:end]
+
+    link_markdown = ""
+    link = ""
+    caption = ""
+
+    caption = link_html[link_html.find(">") + 1: link_html.find("</a>")]
+    if link_html.find("href=") >= 0:
+        link = link_html[link_html.find(
+            "href=") + 6:link_html.find("\" data-href=")]
+
+    if len(caption) == 0:
+        caption = link
+
+    if len(link) > 0:
+        link_markdown = "[{0}]({1})".format(caption, link)
+    post_html = post_html[:start] + link_markdown + post_html[end:]
+
+    if (post_html.find(tag) >= 0):
+        post_html = link_handler(old_tag, post_html)
+    return post_html
+
+
 def transform_html_to_markdown(response):
     """
         Get the article out of the {response} as html then convert it to markdown.
@@ -183,6 +220,9 @@ def transform_html_to_markdown(response):
 
     if post_html.find("<figure") >= 0:
         post_html = picture_handler("figure", "p", post_html)
+
+    if post_html.find("<a") >= 0:
+        post_html = link_handler("a", post_html)
 
     root = ET.fromstring(post_html)
 
