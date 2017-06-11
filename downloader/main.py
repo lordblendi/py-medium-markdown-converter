@@ -100,7 +100,7 @@ def tag_handler(tag, separator, post_html):
     Example 2: <strong>text</strong> => **text**
     """
     old_tag = tag
-    close_tag = "</{0}".format(tag)
+    close_tag = "</{0}>".format(tag)
     tag = "<{0}".format(tag)
 
     start = post_html.find(tag)
