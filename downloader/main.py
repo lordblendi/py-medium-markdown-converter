@@ -73,6 +73,8 @@ def download_posts_in_html(user, posts):
     """
     html_posts = []
     main_url = "https://medium.com/@{0}/".format(user)
+    print("Downloading posts from user {0}.\n".format(user))
+
     for post in posts:
         url = main_url + post["id"]
 
@@ -82,12 +84,17 @@ def download_posts_in_html(user, posts):
         # dasherizing the title
         title = post["title"].lower().replace(" ", "-")
         filename = "{0}-{1}".format(date, title)
+        print("Saving post {0} - {1} into {2}... ".format(post["id"],post["title"], filename), end="")
+
         post_file = open("medium_posts_markdown/{0}.md".format(filename), "w")
+
 
         response = requests.get(url)
         post_file.write(transform_html_to_markdown(response.text))
         post_file.close()
+        print("done")
 
+    print("\nThe files can be found in the medium_posts_markdown folder.")
     return html_posts
 
 
