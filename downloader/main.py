@@ -95,8 +95,6 @@ def download_posts_in_html(user, posts):
             print("done")
         except ET.ParseError:
             print("Something went wrong during the parsing of this post.")
-            print(response.text[response.text.find(
-                "<div class=\"section-inner sectionLayout--insetColumn\">"):response.text.find("</div></section>")])
 
     print("\nThe files can be found in the medium_posts_markdown folder.")
     return html_posts
@@ -205,6 +203,18 @@ def link_handler(tag, post_html):
         post_html = link_handler(old_tag, post_html)
     return post_html
 
+def new_line_handler(tag, post_html):
+    """
+        Replacing a tag with a tag + closing tag
+
+        Example:
+
+        <br> => <br></br>
+    """
+    start_tag = "<{0}>".format(tag)
+    end_tag = "</{0}>".format(tag)
+
+    return post_html.replace(start_tag, start_tag + end_tag)
 
 def transform_html_to_markdown(response):
     """
@@ -234,6 +244,9 @@ def transform_html_to_markdown(response):
 
     if post_html.find("<a") >= 0:
         post_html = link_handler("a", post_html)
+    if post_html.find("<br") >= 0:
+        post_html = new_line_handler("br", post_html)
+        post_html = tag_handler("br", "\n", post_html)
 
     root = ET.fromstring(post_html)
 
@@ -254,6 +267,6 @@ def transform_html_to_markdown(response):
             for index, item in enumerate(child, start=1):
                 post_md += "\n {1}. {0}".format(item.text, index)
         else:
-            print("unkown tag: ", child.tag, child.text)
+            print("\nunkown tag: ", child.tag, child.text, "\n")
 
     return post_md
