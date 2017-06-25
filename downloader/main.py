@@ -45,18 +45,23 @@ def get_post_metadata(text):
     text_without_xml = text[text.find("{"):]
     posts = []
     keys = []
+    author = ""
 
     parsed_json = json.loads(text_without_xml)
     if "payload" in parsed_json:
         if "references" in parsed_json["payload"]:
             if "Post" in parsed_json["payload"]["references"]:
                 keys = parsed_json["payload"]["references"]["Post"].keys()
+            if "user" in parsed_json["payload"]:
+                if "name" in parsed_json["payload"]["user"]:
+                    author = parsed_json["payload"]["user"]["name"]
 
     for key in keys:
         post = parsed_json["payload"]["references"]["Post"][key]
         new_entry = {
             "id": post["id"],
             "title": post["title"],
+            "author": author,
             # conver the timestamps from miliseconds to seconds
             "published": float(post["firstPublishedAt"]) / 1000
         }
@@ -86,10 +91,13 @@ def download_posts_in_html(user, posts, category):
         title = post["title"].lower().replace(" ", "-")
         filename = "{0}-{1}".format(date, title)
         print("Saving post {0} - {1} into {2}...\t".format(post["id"],post["title"], filename), end="")
+        author = ""
+        if len(post["author"]) > 0:
+            author = "author: {0}".format(post["author"])
 
         if category is None:
             category = "medium"
-        post_header = "---\nlayout: post\ntitle: \"{0}\"\ndate: {1}\ncategories: {2}\n---\n".format(post["title"], full_date, category)
+        post_header = "---\nlayout: post\ntitle: {0}\ndate: {1}\ncategories: {2}\n{3}\n---\n".format(post["title"], full_date, category, author)
         try:
             post_file = open("medium_posts_markdown/{0}.md".format(filename), "w")
             response = requests.get(url)
