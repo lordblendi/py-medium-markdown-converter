@@ -13,3 +13,4 @@ python3 run.py -u username -l 5
 The script accepts two parameters:
 - `u` is for the user name. Mandatory and has to be a string.
 - `l` is for limit. Number of posts to retrieve. Not mandatory. Integer and the default is 10 by Medium. Zero will be swapped to one.
+- 'c' is category for the posts.  If it doesn't exists, it will be 'medium'

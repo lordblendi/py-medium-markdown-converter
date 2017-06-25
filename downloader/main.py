@@ -64,7 +64,7 @@ def get_post_metadata(text):
     return posts
 
 
-def download_posts_in_html(user, posts):
+def download_posts_in_html(user, posts, category):
     """
         Download a {user}'s posts. The post ids are defined in the {posts}.
 
@@ -80,17 +80,20 @@ def download_posts_in_html(user, posts):
 
         # for the filename getting the date of the publication and
         date = datetime.fromtimestamp(post["published"])
+        full_date = date.strftime("%Y-%m-%d %H:%M:%S")
         date = date.strftime("%Y-%m-%d")
         # dasherizing the title
         title = post["title"].lower().replace(" ", "-")
         filename = "{0}-{1}".format(date, title)
         print("Saving post {0} - {1} into {2}...\t".format(post["id"],post["title"], filename), end="")
+
+        if category is None:
+            category = "medium"
+        post_header = "---\nlayout: post\ntitle: \"{0}\"\ndate: {1}\ncategories: {2}\n---\n".format(post["title"], full_date, category)
         try:
             post_file = open("medium_posts_markdown/{0}.md".format(filename), "w")
-
-
             response = requests.get(url)
-            post_file.write(transform_html_to_markdown(response.text))
+            post_file.write(post_header + transform_html_to_markdown(response.text))
             post_file.close()
             print("done")
         except ET.ParseError:
